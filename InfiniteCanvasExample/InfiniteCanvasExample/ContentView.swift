@@ -28,8 +28,9 @@ class AppState: ObservableObject {
 }
 
 struct ContentView: View {
+    private var controller = InfiniteCanvasController()
     @StateObject private var state: AppState = AppState(items: [
-        Item(name: "Box 1", color: .red, canvasX: 100, canvasY: 100),
+        Item(name: "Box 1", color: .red, canvasX: 0, canvasY: 0),
         Item(name: "Box 2", color: .purple, canvasX: 300, canvasY: 10),
         Item(name: "Box 3", color: .blue, canvasX: 600, canvasY: 400)
     ])
@@ -39,17 +40,32 @@ struct ContentView: View {
             ItemList(state: state)
             Canvas(state: state)
         }
+        .environmentObject(controller)
     }
 }
 
 struct ItemList: View {
     @ObservedObject var state: AppState
-    @State private var multiSelection = Set<UUID>()
+    @EnvironmentObject private var controller: InfiniteCanvasController
 
     var body: some View {
         VStack {
             List(state.items, id: \.id, selection: selection) { item in
                 Text(item.name)
+            }
+            Spacer()
+            Spacer()
+            HStack {
+                Button("Zoom to fit") {
+                    guard let selectedItem = state.items.first(where: { $0.id == state.selectedItemID }) else {
+                        return
+                    }
+                    controller.fit(bounds: [selectedItem].bounds)
+                }
+                .disabled(state.selectedItemID == nil)
+                Button("Fit Canvas") {
+                    controller.fit(bounds: state.items.bounds)
+                }
             }
             Spacer()
         }
@@ -70,9 +86,10 @@ struct ItemList: View {
 
 struct Canvas: View {
     @ObservedObject var state: AppState
+    @EnvironmentObject private var controller: InfiniteCanvasController
 
     var body: some View {
-        InfiniteCanvas {
+        InfiniteCanvas(controller: controller) {
             ForEach(state.items, id: \.id) { item in
                 CanvasItem(item: item, isSelected: item.id == state.selectedItemID)
                     .onTapGesture {
@@ -101,5 +118,24 @@ struct CanvasItem: View {
                 item.canvasX = item.canvasX + event.deltaX
                 item.canvasY = item.canvasY + event.deltaY
             }
+    }
+}
+
+
+extension Item {
+    var bounds:CGRect {
+        return CGRect(x: self.canvasX, y: self.canvasY, width: 100, height: 100)
+    }
+}
+
+extension Array where Element == Item {
+    @MainActor
+    var bounds: CGRect {
+        if self.isEmpty {
+            return .zero
+        }
+        return self.reduce(self.first!.bounds) { acc, item in
+            acc.union(item.bounds)
+        }
     }
 }
