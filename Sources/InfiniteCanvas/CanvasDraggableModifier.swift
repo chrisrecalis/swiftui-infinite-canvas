@@ -1,15 +1,11 @@
 import SwiftUI
 
-public struct CanvasDraggableEvent {
-    public let deltaX: CGFloat
-    public let deltaY: CGFloat
-}
-
-
 public struct CanvasDraggable: ViewModifier {
     @EnvironmentObject private var controller: InfiniteCanvasController
     @GestureState private var drag: CGPoint? = nil
-    let action: ((CanvasDraggableEvent) -> Void)
+
+    @Binding var x: CGFloat
+    @Binding var y: CGFloat
 
     public func body(content: Content) -> some View {
         content
@@ -19,7 +15,8 @@ public struct CanvasDraggable: ViewModifier {
                         let deltaX = (value.location.x - (gestureState?.x ?? value.startLocation.x)) / controller.scale
                         let deltaY = (value.location.y - (gestureState?.y ?? value.startLocation.y)) / controller.scale
 
-                        action(CanvasDraggableEvent(deltaX: deltaX, deltaY: deltaY))
+                        x = x + deltaX
+                        y = y + deltaY
                         gestureState = value.location
                     }
             )
@@ -28,7 +25,7 @@ public struct CanvasDraggable: ViewModifier {
 
 
 public extension View {
-    func canvasDraggable(_ action: @escaping ((CanvasDraggableEvent) -> Void)) -> some View {
-        modifier(CanvasDraggable(action: action))
+    func canvasDraggable(x: Binding<CGFloat>, y: Binding<CGFloat>) -> some View {
+        modifier(CanvasDraggable(x: x, y: y))
     }
 }
