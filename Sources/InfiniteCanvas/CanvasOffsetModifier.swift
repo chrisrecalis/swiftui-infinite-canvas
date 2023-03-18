@@ -9,7 +9,7 @@ public struct CanvasOffset: ViewModifier {
     public func body(content: Content) -> some View {
         content
             .offset(x: x - controller.offsetX, y: y - controller.offsetY)
-            .scaleEffect(controller.scale, anchor: .bottomLeading)
+            .scaleEffect(controller.scale, anchor: .topLeading)
     }
 }
 
