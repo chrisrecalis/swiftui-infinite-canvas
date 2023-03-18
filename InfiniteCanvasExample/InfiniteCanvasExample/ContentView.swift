@@ -54,7 +54,6 @@ struct ItemList: View {
                 Text(item.name)
             }
             Spacer()
-            Spacer()
             HStack {
                 Button("Zoom to fit") {
                     guard let selectedItem = state.items.first(where: { $0.id == state.selectedItemID }) else {
@@ -114,10 +113,7 @@ struct CanvasItem: View {
             .background(Rectangle().fill(item.color))
             .border(isSelected ? .black : .clear, width: 3)
             .canvasOffset(x: item.canvasX, y: item.canvasY)
-            .canvasDraggable { event in
-                item.canvasX = item.canvasX + event.deltaX
-                item.canvasY = item.canvasY + event.deltaY
-            }
+            .canvasDraggable(x: $item.canvasX, y: $item.canvasY)
     }
 }
 
