@@ -6,14 +6,19 @@ class Item: Identifiable, ObservableObject {
     let id = UUID()
     let name: String
     let color: Color
-    @Published var canvasX: CGFloat
-    @Published var canvasY: CGFloat
-
-    init(name: String, color: Color, canvasX: CGFloat, canvasY: CGFloat) {
+    @Published var position: CGPoint
+    let size: CGSize
+    
+    
+    init(name: String, color: Color, position: CGPoint, size: CGSize) {
         self.name = name
         self.color = color
-        self.canvasX = canvasX
-        self.canvasY = canvasY
+        self.position = position
+        self.size = size
+    }
+    
+    var bounds: CGRect {
+        CGRect(x: position.x, y: position.y, width: size.width, height: size.height)
     }
 }
 
@@ -21,7 +26,7 @@ class Item: Identifiable, ObservableObject {
 class AppState: ObservableObject {
     @Published var selectedItemID: UUID? = nil
     @Published var items: [Item] = []
-
+    
     public init(items: [Item]) {
         self.items = items
     }
@@ -29,16 +34,19 @@ class AppState: ObservableObject {
 
 struct ContentView: View {
     private var controller = InfiniteCanvasController()
-    @StateObject private var state: AppState = AppState(items: [
-        Item(name: "Box 1", color: .red, canvasX: 0, canvasY: 0),
-        Item(name: "Box 2", color: .purple, canvasX: 300, canvasY: 10),
-        Item(name: "Box 3", color: .blue, canvasX: 600, canvasY: 400)
-    ])
-
+    @StateObject private var state: AppState = AppState(items: (0...300).map { i in
+        Item(
+            name: "Box \(i)",
+            color: .random,
+            position: CGPoint(x: .random(in: 0...3500), y: .random(in: 0...3500)),
+            size: CGSize(width: .random(in: 10...200), height: .random(in: 10...200))
+        )
+    })
+    
     var body: some View {
         HStack(spacing: 0) {
-            ItemList(state: state)
-            Canvas(state: state)
+            ItemList(state: state, controller: controller)
+            Canvas(state: state, controller: controller)
         }
         .environmentObject(controller)
     }
@@ -46,8 +54,8 @@ struct ContentView: View {
 
 struct ItemList: View {
     @ObservedObject var state: AppState
-    @EnvironmentObject private var controller: InfiniteCanvasController
-
+    let controller: InfiniteCanvasController
+    
     var body: some View {
         VStack {
             List(state.items, id: \.id, selection: selection) { item in
@@ -69,8 +77,9 @@ struct ItemList: View {
             Spacer()
         }
         .frame(maxWidth: 200)
+        .border(.black.opacity(0.1), width: 1)
     }
-
+    
     var selection: Binding<Set<UUID>> {
         Binding {
             if let selected = state.selectedItemID {
@@ -85,12 +94,13 @@ struct ItemList: View {
 
 struct Canvas: View {
     @ObservedObject var state: AppState
-    @EnvironmentObject private var controller: InfiniteCanvasController
-
+    var controller: InfiniteCanvasController
+    
     var body: some View {
         InfiniteCanvas(controller: controller) {
+            Color.clear
             ForEach(state.items, id: \.id) { item in
-                CanvasItem(item: item, isSelected: item.id == state.selectedItemID)
+                CanvasItem(item: item, isSelected: item.id == state.selectedItemID, controller: controller)
                     .onTapGesture {
                         state.selectedItemID = item.id
                     }
@@ -102,27 +112,21 @@ struct Canvas: View {
 struct CanvasItem: View {
     @ObservedObject var item: Item
     @GestureState private var drag: CGPoint? = nil
-    @EnvironmentObject private var controller: InfiniteCanvasController
 
     let isSelected: Bool
+    let controller: InfiniteCanvasController
+
 
     var body: some View {
         Text(item.name)
             .foregroundColor(.white)
-            .frame(width: 100, height: 100)
+            .frame(width: item.size.width, height: item.size.height)
             .background(Rectangle().fill(item.color))
             .border(isSelected ? .black : .clear, width: 3)
-            .canvasOffset(x: item.canvasX, y: item.canvasY)
-            .canvasDraggable(x: $item.canvasX, y: $item.canvasY)
+            .canvasPosition(position: item.position, controller: controller)
     }
 }
 
-
-extension Item {
-    var bounds:CGRect {
-        return CGRect(x: self.canvasX, y: self.canvasY, width: 100, height: 100)
-    }
-}
 
 extension Array where Element == Item {
     @MainActor
@@ -133,5 +137,15 @@ extension Array where Element == Item {
         return self.reduce(self.first!.bounds) { acc, item in
             acc.union(item.bounds)
         }
+    }
+}
+
+extension Color {
+    static var random: Color {
+        return Color(
+            red: .random(in: 0...1),
+            green: .random(in: 0...1),
+            blue: .random(in: 0...1)
+        )
     }
 }
