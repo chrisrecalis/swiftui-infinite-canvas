@@ -5,20 +5,20 @@ let visibleRectIntersectionPadding = CGSize(width: 100, height: 100)
 public struct CanvasPosition: ViewModifier {
     @State private var canvasPosition: CGPoint = .zero
     @State private var size: CGSize = .zero
-
+    
     let position: CGPoint
     let controller: InfiniteCanvasController
-
+    
     init(position: CGPoint, controller: InfiniteCanvasController) {
         self.position = position
         self.controller = controller
         _canvasPosition = State(initialValue: position - controller.contentOffset)
     }
-
+    
     public func body(content: Content) -> some View {
         content
             .offset(x: canvasPosition.x, y: canvasPosition.y)
-            // NOTE: a bit hacky but we don't need to listen to changes of scale as when the scale changes contentOffset is garunteed to change as well
+        // NOTE: a bit hacky but we don't need to listen to changes of scale as when the scale changes contentOffset is garunteed to change as well
             .scaleEffect(controller.scale, anchor: .topLeading)
             .background(
                 GeometryReader { geometryProxy in
@@ -36,14 +36,14 @@ public struct CanvasPosition: ViewModifier {
                     y: position.y - offset.y
                 )
             }
-
+        
     }
-
-//    func isWithinVisibleRect() -> Bool {
-//        let viewBounds = CGRect(x: position.x, y: position.y, width: size.width + visibleRectIntersectionPadding.width , height: size.height + visibleRectIntersectionPadding.height)
-//        let inside =  controller.visibleRect.intersects(viewBounds)
-//        return inside
-//    }
+    
+    //    func isWithinVisibleRect() -> Bool {
+    //        let viewBounds = CGRect(x: position.x, y: position.y, width: size.width + visibleRectIntersectionPadding.width , height: size.height + visibleRectIntersectionPadding.height)
+    //        let inside =  controller.visibleRect.intersects(viewBounds)
+    //        return inside
+    //    }
 }
 
 public extension View {

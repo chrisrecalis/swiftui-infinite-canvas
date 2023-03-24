@@ -112,11 +112,11 @@ struct Canvas: View {
 struct CanvasItem: View {
     @ObservedObject var item: Item
     @GestureState private var drag: CGPoint? = nil
-
+    
     let isSelected: Bool
     let controller: InfiniteCanvasController
-
-
+    
+    
     var body: some View {
         Text(item.name)
             .foregroundColor(.white)

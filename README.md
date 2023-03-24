@@ -31,7 +31,6 @@ struct ItemView: View {
             .fill(Color.red)
             .frame(width: 50, height: 50)
             .canvasOffset(x: item.canvasX, y: item.canvasY)
-            .canvasDraggable(x: $item.canvasX, y: $item.canvasY)
     }
 }
 
